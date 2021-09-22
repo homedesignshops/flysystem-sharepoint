@@ -1,0 +1,42 @@
+{
+    "name": "homedesignshops/flysystem-sharepoint",
+    "description": "Flysystem v2 SharePoint adapter for the Microsoft Graph API",
+    "keywords": [
+        "homedesignshops",
+        "flysystem-sharepoint"
+    ],
+    "homepage": "https://github.com/homedesignshops/flysystem-sharepoint",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Kevin Koenen",
+            "email": "kevin@homedesignshops.nl",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.4|^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Homedesignshops\\FlysystemSharepoint\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Homedesignshops\\FlysystemSharepoint\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
