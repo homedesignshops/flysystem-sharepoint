@@ -1,10 +1,11 @@
-# Very short description of the package
+# Flysystem adapter for Microsoft Sharepoint
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/homedesignshops/flysystem-sharepoint.svg?style=flat-square)](https://packagist.org/packages/homedesignshops/flysystem-sharepoint)
 [![Total Downloads](https://img.shields.io/packagist/dt/homedesignshops/flysystem-sharepoint.svg?style=flat-square)](https://packagist.org/packages/homedesignshops/flysystem-sharepoint)
 ![GitHub Actions](https://github.com/homedesignshops/flysystem-sharepoint/actions/workflows/main.yml/badge.svg)
 
-This is where your description should go. Try and limit it to a paragraph or two, and maybe throw in a mention of what PSRs you support to avoid any confusion with users and contributors.
+This package contains a Flysystem adapter for Sharepoint. Under the hood, the Microsoft Graph API v1 is used.
+You need an Azure App to use this package.
 
 ## Installation
 
@@ -16,8 +17,22 @@ composer require homedesignshops/flysystem-sharepoint
 
 ## Usage
 
+The first thing you need to do is [creating a new Azure Application](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps).
+Make sure you set the Microsoft Graph API Permissions inside your created application:
+- Files.ReadWrite.All
+- Group.ReadWrite.All
+
+After that, you can use the adapter as follows:
+
 ```php
-// Usage description here
+use Homedesignshops\FlysystemSharepoint\SharepointClient;
+use Homedesignshops\FlysystemSharepoint\SharepointAdapter;
+use League\Flysystem\Filesystem;
+
+$client = new SharepointClient($tenantId, $clientId, $clientSecret, $sharepointGroupName)
+$adapter = new SharepointAdapter($client, $pathPrefix);
+
+$filesystem = new Filesystem($adapter);
 ```
 
 ### Testing
@@ -41,12 +56,7 @@ If you discover any security related issues, please email kevin@homedesignshops.
 ## Credits
 
 -   [Kevin Koenen](https://github.com/homedesignshops)
--   [All Contributors](../../contributors)
 
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
-
-## PHP Package Boilerplate
-
-This package was generated using the [PHP Package Boilerplate](https://laravelpackageboilerplate.com) by [Beyond Code](http://beyondco.de/).
