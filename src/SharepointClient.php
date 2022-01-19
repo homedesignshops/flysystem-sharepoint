@@ -11,6 +11,8 @@ use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model\Drive;
 use Microsoft\Graph\Model\DriveItem;
 use Microsoft\Graph\Model\Group;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class SharepointClient
 {
@@ -34,6 +36,8 @@ class SharepointClient
     protected string $graphResource = 'https://graph.microsoft.com/';
 
     protected int $maxChunkSize;
+
+    protected LoggerInterface $logger;
 
     /**
      * The first string replacer is the tenant id.
@@ -60,13 +64,29 @@ class SharepointClient
             'base_uri' => $this->baseUri
         ]);
         $this->sharepointGroupName = $sharepointGroupName;
-
-        $this->graph = $graph ?? new Graph();
-        $this->graph->setAccessToken($this->getGraphAccessToken());
-
         $this->maxChunkSize = ($maxChunkSize < self::MAX_CHUNK_SIZE ? ($maxChunkSize > 1 ? $maxChunkSize : 1) : self::MAX_CHUNK_SIZE);
 
-        $this->setDrivePath($this->getGroupByName($sharepointGroupName));
+        try {
+            $this->graph = $graph ?? new Graph();
+            $this->graph->setAccessToken($this->getGraphAccessToken());
+
+            $this->setDrivePath($this->getGroupByName($sharepointGroupName));
+        } catch (\Exception $e) {
+            $this->logger->error($e->getMessage(), $e->getTrace());
+        }
+
+        $this->logger = new NullLogger();
+    }
+
+    /**
+     * Set the log handler.
+     *
+     * @param LoggerInterface $logger
+     * @return void
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
     }
 
     /**
@@ -76,13 +96,12 @@ class SharepointClient
      *
      * @param string $path
      * @param string|resource $contents
-     * @param string $mode
-     * @param bool $auto_rename
      * @return DriveItem|bool
      */
-    public function upload(string $path, $contents, string $mode = 'add', $auto_rename = false)
+    public function upload(string $path, $contents)
     {
         if($this->shouldUploadChunked($contents)) {
+            $this->logger->info('File "' . $path . '" should be uploaded as chunk. Not implemented.');
             return false;
         }
 
@@ -93,6 +112,7 @@ class SharepointClient
                 ->setReturnType(DriveItem::class)
                 ->execute();
         } catch (GuzzleException | GraphException $e) {
+            $this->logger->error($e->getMessage(), $e->getTrace());
             return false;
         }
 
@@ -185,12 +205,10 @@ class SharepointClient
      * @param string $name
      * @return Group|null
      * @throws GuzzleException
+     * @throws GraphException
      */
     public function getGroupByName(string $name): ?Group
     {
-        /**
-         * @var Group $group
-         */
         foreach ($this->getGroups() as $group)
         {
             if($group->getDisplayName() === $name) {
@@ -204,33 +222,23 @@ class SharepointClient
     /**
      * @return Group[]
      * @throws GuzzleException
+     * @throws GraphException
      */
     protected function getDrivesByGroup(Group $group): array
     {
-        try {
-            $drives = $this->graph->createRequest('GET', '/groups/'.$group->getId().'/drives')
-                ->setReturnType(\Microsoft\Graph\Model\Drive::class)
-                ->execute();
-        } catch (\Exception $e) {
-            return [];
-        }
-
-        return $drives;
+        return $this->graph->createRequest('GET', '/groups/'.$group->getId().'/drives')
+            ->setReturnType(\Microsoft\Graph\Model\Drive::class)
+            ->execute();
     }
 
     /**
      * @return Group[]
      * @throws GuzzleException
+     * @throws GraphException
      */
     protected function getGroups(): array
     {
-        try {
-            $groups = $this->graph->createRequest('GET', '/groups')->setReturnType(\Microsoft\Graph\Model\Group::class)->execute();
-        } catch (\Exception $e) {
-            return [];
-        }
-
-        return $groups;
+        return $this->graph->createRequest('GET', '/groups')->setReturnType(\Microsoft\Graph\Model\Group::class)->execute();
     }
 
 }
