@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Microsoft\Graph\Exception\GraphException;
 use Microsoft\Graph\Graph;
+use Microsoft\Graph\Http\GraphRequest;
 use Microsoft\Graph\Model\Drive;
 use Microsoft\Graph\Model\DriveItem;
 use Microsoft\Graph\Model\Group;
@@ -34,6 +35,8 @@ class SharepointClient
     protected Graph $graph;
     protected string $baseUri = 'https://login.microsoftonline.com/';
     protected string $graphResource = 'https://graph.microsoft.com/';
+
+    protected string $accessToken;
 
     protected int $maxChunkSize;
 
@@ -70,8 +73,8 @@ class SharepointClient
 
         try {
             $this->graph = $graph ?? new Graph();
-            $this->graph->setAccessToken($this->getGraphAccessToken());
-
+            $this->refreshAccessToken();
+            $this->applyAccessToken($this->accessToken);
             $this->setDrivePath($this->getGroupByName($sharepointGroupName));
         } catch (\Exception $e) {
             $this->logger->error($e->getMessage(), $e->getTrace());
@@ -107,11 +110,13 @@ class SharepointClient
         }
 
         try {
-            $driveItem = $this->graph->createRequest('PUT', $this->drivePath.'/root:/'.$path.':/content')
+            $request = $this->graph->createRequest('PUT', $this->drivePath.'/root:/'.$path.':/content')
                 ->addHeaders(['Content-Type' => 'text/csv'])
                 ->attachBody($contents)
-                ->setReturnType(DriveItem::class)
-                ->execute();
+                ->setReturnType(DriveItem::class);
+
+            $driveItem = $this->executeRequest($request);
+
         } catch (GuzzleException | GraphException $e) {
             $this->logger->error($e->getMessage(), $e->getTrace());
             return false;
@@ -137,9 +142,8 @@ class SharepointClient
                     'grant_type' => 'client_credentials'
                 ],
             ])->getBody()->getContents(), false, 512, JSON_THROW_ON_ERROR);
-        } catch (GuzzleException $e) {
-            throw new UnableToGetAccessToken($e->getMessage(), $e->getCode(), $e->getTrace());
-        } catch (\JsonException $e) {
+        } catch (GuzzleException | \JsonException | \Exception $e) {
+            $this->logger->error($e->getMessage(), $e->getTrace());
             throw new UnableToGetAccessToken($e->getMessage(), $e->getCode(), $e->getTrace());
         }
 
@@ -240,6 +244,39 @@ class SharepointClient
     protected function getGroups(): array
     {
         return $this->graph->createRequest('GET', '/groups')->setReturnType(\Microsoft\Graph\Model\Group::class)->execute();
+    }
+
+    /**
+     * @throws GuzzleException
+     */
+    protected function executeRequest(GraphRequest $graphRequest)
+    {
+        try {
+            return $graphRequest->execute();
+        } catch (GuzzleException $e) {
+            if($e->getCode() == 401) {
+                $this->refreshAccessToken();
+                $this->applyAccessToken($this->accessToken, $graphRequest);
+                return $this->executeRequest($graphRequest);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * @return void
+     */
+    protected function refreshAccessToken(): void
+    {
+        $this->accessToken = $this->getGraphAccessToken();
+    }
+
+    protected function applyAccessToken(string $accessToken, GraphRequest $graphRequest = null)
+    {
+        $this->graph->setAccessToken($accessToken);
+        if($graphRequest) {
+            $graphRequest->setAccessToken($accessToken);
+        }
     }
 
 }
