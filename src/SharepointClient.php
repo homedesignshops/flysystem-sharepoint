@@ -66,6 +66,8 @@ class SharepointClient
         $this->sharepointGroupName = $sharepointGroupName;
         $this->maxChunkSize = ($maxChunkSize < self::MAX_CHUNK_SIZE ? ($maxChunkSize > 1 ? $maxChunkSize : 1) : self::MAX_CHUNK_SIZE);
 
+        $this->logger = new NullLogger();
+
         try {
             $this->graph = $graph ?? new Graph();
             $this->graph->setAccessToken($this->getGraphAccessToken());
@@ -75,7 +77,6 @@ class SharepointClient
             $this->logger->error($e->getMessage(), $e->getTrace());
         }
 
-        $this->logger = new NullLogger();
     }
 
     /**
