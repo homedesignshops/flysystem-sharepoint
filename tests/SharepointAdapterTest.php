@@ -38,10 +38,10 @@ class SharepointAdapterTest extends TestCase
     /** @test */
     public function it_can_write(): void
     {
-        $this->client->upload(Argument::any(), Argument::any(), Argument::any())->willReturn(new DriveItem());
+        $this->client->upload(Argument::any(), Argument::any())
+            ->shouldBeCalledTimes(1)
+            ->willReturn(new DriveItem());
 
-        $result = $this->sharepointAdapter->write('something', 'contents', new Config());
-
-        self::assertInstanceOf(DriveItem::class, $result);
+        $this->sharepointAdapter->write('something', 'contents', new Config());
     }
 }

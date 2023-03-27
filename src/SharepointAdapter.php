@@ -2,15 +2,13 @@
 
 namespace Homedesignshops\FlysystemSharepoint;
 
-use League\Flysystem\Adapter\AbstractAdapter;
-use League\Flysystem\Adapter\Polyfill\NotSupportingVisibilityTrait;
 use League\Flysystem\Config;
+use League\Flysystem\FileAttributes;
+use League\Flysystem\FilesystemAdapter;
 use Microsoft\Graph\Model\DriveItem;
 
-class SharepointAdapter extends AbstractAdapter
+class SharepointAdapter implements FilesystemAdapter
 {
-    use NotSupportingVisibilityTrait;
-
     protected SharepointClient $client;
 
     protected string $prefix;
@@ -19,21 +17,21 @@ class SharepointAdapter extends AbstractAdapter
     {
         $this->client = $client;
 
-        $this->setPathPrefix($prefix);
+        $this->prefix = $prefix;
     }
 
     /**
      * @inheritDoc
      */
-    public function write($path, $contents, Config $config)
+    public function write($path, $contents, Config $config): void
     {
-        return $this->upload($path, $contents, 'add');
+        $this->upload($path, $contents, 'add');
     }
 
     /**
      * @inheritDoc
      */
-    public function writeStream($path, $resource, Config $config)
+    public function writeStream($path, $resource, Config $config): void
     {
         // TODO: Implement writeStream() method.
     }
@@ -65,7 +63,7 @@ class SharepointAdapter extends AbstractAdapter
     /**
      * @inheritDoc
      */
-    public function copy($path, $newpath)
+    public function copy($path, $newpath, Config $config): void
     {
         // TODO: Implement copy() method.
     }
@@ -73,7 +71,7 @@ class SharepointAdapter extends AbstractAdapter
     /**
      * @inheritDoc
      */
-    public function delete($path)
+    public function delete($path): void
     {
         // TODO: Implement delete() method.
     }
@@ -97,7 +95,7 @@ class SharepointAdapter extends AbstractAdapter
     /**
      * @inheritDoc
      */
-    public function setVisibility($path, $visibility)
+    public function setVisibility($path, $visibility): void
     {
         // TODO: Implement setVisibility() method.
     }
@@ -113,7 +111,7 @@ class SharepointAdapter extends AbstractAdapter
     /**
      * @inheritDoc
      */
-    public function read($path)
+    public function read($path): string
     {
         // TODO: Implement read() method.
     }
@@ -129,7 +127,7 @@ class SharepointAdapter extends AbstractAdapter
     /**
      * @inheritDoc
      */
-    public function listContents($directory = '', $recursive = false)
+    public function listContents($directory = '', $recursive = false): iterable
     {
         // TODO: Implement listContents() method.
     }
@@ -179,9 +177,7 @@ class SharepointAdapter extends AbstractAdapter
      */
     public function applyPathPrefix($path): string
     {
-        $path = parent::applyPathPrefix($path);
-
-        return '/'.trim($path, '/');
+        return '/'.trim($this->prefix.'/'.$path, '/');
     }
 
     public function getClient(): SharepointClient
@@ -197,14 +193,59 @@ class SharepointAdapter extends AbstractAdapter
      * @param string $mode
      * @return DriveItem|bool
      */
-    protected function upload(string $path, $contents, string $mode): DriveItem|bool
+    protected function upload(string $path, $contents): DriveItem|bool
     {
         $path = $this->applyPathPrefix($path);
 
         try {
-            return $this->client->upload($path, $contents, $mode);
+            return $this->client->upload($path, $contents);
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    public function fileExists(string $path): bool
+    {
+        // TODO: Implement fileExists() method.
+    }
+
+    public function directoryExists(string $path): bool
+    {
+        // TODO: Implement directoryExists() method.
+    }
+
+    public function deleteDirectory(string $path): void
+    {
+        // TODO: Implement deleteDirectory() method.
+    }
+
+    public function createDirectory(string $path, Config $config): void
+    {
+        // TODO: Implement createDirectory() method.
+    }
+
+    public function visibility(string $path): FileAttributes
+    {
+        // TODO: Implement visibility() method.
+    }
+
+    public function mimeType(string $path): FileAttributes
+    {
+        // TODO: Implement mimeType() method.
+    }
+
+    public function lastModified(string $path): FileAttributes
+    {
+        // TODO: Implement lastModified() method.
+    }
+
+    public function fileSize(string $path): FileAttributes
+    {
+        // TODO: Implement fileSize() method.
+    }
+
+    public function move(string $source, string $destination, Config $config): void
+    {
+        // TODO: Implement move() method.
     }
 }
