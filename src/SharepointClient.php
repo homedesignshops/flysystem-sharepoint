@@ -144,7 +144,7 @@ class SharepointClient
             ])->getBody()->getContents(), false, 512, JSON_THROW_ON_ERROR);
         } catch (GuzzleException | \JsonException | \Exception $e) {
             $this->logger->error($e->getMessage(), $e->getTrace());
-            throw new UnableToGetAccessToken($e->getMessage(), $e->getCode(), $e->getTrace());
+            throw new UnableToGetAccessToken($e->getMessage(), $e->getCode(), $e);
         }
 
         return $token->access_token;
