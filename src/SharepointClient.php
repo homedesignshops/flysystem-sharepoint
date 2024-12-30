@@ -231,10 +231,16 @@ class SharepointClient
      */
     protected function getDrivesByGroup(Group $group, ?string $driveName = null): array
     {
+        $drives = $this->graph->createRequest('GET', '/groups/' . $group->getId() . '/drives')
+            ->setReturnType(\Microsoft\Graph\Model\Drive::class)
+            ->execute();
+
+        if(!$driveName) {
+            return $drives;
+        }
+
         return array_values(array_filter(
-            $this->graph->createRequest('GET', '/groups/'.$group->getId().'/drives')
-                ->setReturnType(\Microsoft\Graph\Model\Drive::class)
-                ->execute(),
+            $drives,
             function(Drive $drive) use ($driveName) {
                 return strtolower($drive->getName()) === strtolower($driveName);
             })
