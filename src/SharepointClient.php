@@ -58,7 +58,7 @@ class SharepointClient
      * @param Graph|null $graph
      * @throws GuzzleException
      */
-    public function __construct(string $tenantId, string $clientId, string $clientSecret, string $sharepointGroupName, int $maxChunkSize = self::MAX_CHUNK_SIZE, Graph $graph = null)
+    public function __construct(string $tenantId, string $clientId, string $clientSecret, string $sharepointGroupName, int $maxChunkSize = self::MAX_CHUNK_SIZE, Graph $graph = null, ?string $driveName = null)
     {
         $this->tenantId = $tenantId;
         $this->clientId = $clientId;
@@ -75,7 +75,7 @@ class SharepointClient
             $this->graph = $graph ?? new Graph();
             $this->refreshAccessToken();
             $this->applyAccessToken($this->accessToken);
-            $this->setDrivePath($this->getGroupByName($sharepointGroupName));
+            $this->setDrivePath($this->getGroupByName($sharepointGroupName), $driveName);
         } catch (\Exception $e) {
             $this->logger->error($e->getMessage(), $e->getTrace());
         }
@@ -191,12 +191,12 @@ class SharepointClient
      * @throws GraphException
      * @throws GuzzleException
      */
-    public function setDrivePath(Group $group): void
+    public function setDrivePath(Group $group, ?string $driveName = null): void
     {
         /**
          * @var Drive[] $drives
          */
-        $drives = $this->getDrivesByGroup($group);
+        $drives = $this->getDrivesByGroup($group, $driveName);
         if(count($drives) === 0) {
             throw new GraphException('No drives available');
         } else if (count($drives) > 1) {
@@ -229,11 +229,16 @@ class SharepointClient
      * @throws GuzzleException
      * @throws GraphException
      */
-    protected function getDrivesByGroup(Group $group): array
+    protected function getDrivesByGroup(Group $group, ?string $driveName = null): array
     {
-        return $this->graph->createRequest('GET', '/groups/'.$group->getId().'/drives')
-            ->setReturnType(\Microsoft\Graph\Model\Drive::class)
-            ->execute();
+        return array_values(array_filter(
+            $this->graph->createRequest('GET', '/groups/'.$group->getId().'/drives')
+                ->setReturnType(\Microsoft\Graph\Model\Drive::class)
+                ->execute(),
+            function(Drive $drive) use ($driveName) {
+                return strtolower($drive->getName()) === strtolower($driveName);
+            })
+        );
     }
 
     /**
